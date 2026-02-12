@@ -13,6 +13,7 @@ import AIFundamentals from './pages/AIFundamentals';
 import FileSystemCourse from './pages/FileSystemCourse';
 import RationalExpressionsCourse from './pages/RationalExpressionsCourse';
 import ProbabilityTheoryCourse from './pages/ProbabilityTheoryCourse';
+import RepetitionPage from './pages/RepetitionPage';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/file-system-course" element={<FileSystemCourse />} />
             <Route path="/rational-expressions-course" element={<RationalExpressionsCourse />} />
             <Route path="/probability-theory-course" element={<ProbabilityTheoryCourse />} />
+            <Route path="/repetition" element={<RepetitionPage />} />
           </Routes>
         </motion.main>
       </div>

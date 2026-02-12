@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, Star, Users, Trophy, Clock } from 'lucide-react';
+import { ArrowRight, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, Star, Users, Trophy, Clock, RotateCcw } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
   const features = [
@@ -46,6 +46,13 @@ const LandingPage: React.FC = () => {
       description: 'Получение персонализированной помощи',
       path: '/consultant',
       color: 'bg-indigo-100 text-indigo-600'
+    },
+    {
+      icon: RotateCcw,
+      title: 'Интервальное повторение',
+      description: 'Научно обоснованная система запоминания с оптимальными интервалами',
+      path: '/repetition',
+      color: 'bg-teal-100 text-teal-600'
     },
   ];
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Play, Clock, Target, TrendingUp, Award, ChevronRight, Zap, BarChart, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
+import { repetitionSystem } from '../utils/intervalRepetition';
 
 interface Question {
   id: number;
@@ -334,6 +335,19 @@ const NeuroExaminer: React.FC = () => {
 
   const finishTest = () => {
     if (testSession) {
+      // Add incorrect answers to repetition system
+      questions.forEach((question, index) => {
+        const userAnswerIndex = testSession.userAnswers[index];
+        if (userAnswerIndex !== undefined && userAnswerIndex !== question.correctAnswer) {
+          repetitionSystem.addItem(
+            question.question,
+            'ai-fundamentals',
+            question.difficulty,
+            'adaptive-test'
+          );
+        }
+      });
+      
       setTestSession({
         ...testSession,
         isComplete: true

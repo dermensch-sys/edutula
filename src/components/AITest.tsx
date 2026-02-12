@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award } from 'lucide-react';
+import { repetitionSystem } from '../utils/intervalRepetition';
 
 interface Question {
   id: number;
@@ -172,6 +173,19 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
 
   const handleFinishTest = () => {
     setShowResults(true);
+    
+    // Add incorrect answers to repetition system
+    questions.forEach((question, index) => {
+      const userAnswer = selectedAnswers[index];
+      if (userAnswer !== undefined && userAnswer !== question.correctAnswer) {
+        repetitionSystem.addItem(
+          question.question,
+          question.category || 'ai-fundamentals',
+          question.difficulty || 'medium',
+          'test-review'
+        );
+      }
+    });
   };
 
   const calculateScore = () => {
