@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Brain, TrendingUp, Target, Award, BarChart3, Play, Settings } from 'lucide-react';
+import { Calendar, Clock, Brain, TrendingUp, Target, Award, BarChart3, Play, Settings, Zap } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
 import RepetitionSession from './RepetitionSession';
+import AITest from './AITest';
 
 const RepetitionDashboard: React.FC = () => {
   const [showSession, setShowSession] = useState(false);
+  const [showAITest, setShowAITest] = useState(false);
   const [statistics, setStatistics] = useState<any>(null);
   const [dueItems, setDueItems] = useState<any[]>([]);
 
@@ -23,6 +25,11 @@ const RepetitionDashboard: React.FC = () => {
   const handleSessionComplete = (results: { accuracy: number; duration: number }) => {
     setShowSession(false);
     loadData(); // Refresh data after session
+  };
+
+  const handleAITestComplete = () => {
+    setShowAITest(false);
+    loadData(); // Refresh data after AI test
   };
 
   const getStreakColor = (streak: number) => {
@@ -63,14 +70,23 @@ const RepetitionDashboard: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">Интервальное повторение</h2>
           <p className="text-gray-600">Оптимизированное запоминание с помощью научно обоснованных интервалов</p>
         </div>
-        <button
-          onClick={() => setShowSession(true)}
-          disabled={dueItems.length === 0}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Play className="h-4 w-4 mr-2" />
-          Начать сессию (15 мин)
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowAITest(true)}
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            ИИ Тест
+          </button>
+          <button
+            onClick={() => setShowSession(true)}
+            disabled={dueItems.length === 0}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Начать сессию (15 мин)
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -157,13 +173,22 @@ const RepetitionDashboard: React.FC = () => {
                 <p className="text-sm text-gray-600">15-минутное повторение готово</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowSession(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Начать
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowAITest(true)}
+                className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Zap className="h-4 w-4 mr-1" />
+                ИИ Тест
+              </button>
+              <button
+                onClick={() => setShowSession(true)}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Начать
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -278,11 +303,14 @@ const RepetitionDashboard: React.FC = () => {
             Пройдите тесты или изучите теоретические материалы, чтобы добавить элементы в систему повторения
           </p>
           <div className="flex justify-center space-x-4">
+            <button 
+              onClick={() => setShowAITest(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Пройти ИИ тест
+            </button>
             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               Перейти к теории
-            </button>
-            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-              Пройти тест
             </button>
           </div>
         </motion.div>
@@ -294,6 +322,11 @@ const RepetitionDashboard: React.FC = () => {
           onComplete={handleSessionComplete}
           onClose={() => setShowSession(false)}
         />
+      )}
+
+      {/* AI Test Modal */}
+      {showAITest && (
+        <AITest onClose={handleAITestComplete} />
       )}
     </div>
   );
