@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, GraduationCap, RotateCcw } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ const Navbar: React.FC = () => {
     { name: 'Нейроэкзаменатор', path: '/examiner', icon: Brain },
     { name: 'Нейроконсультант', path: '/consultant', icon: MessageCircle },
     { name: 'Повторение', path: '/repetition', icon: RotateCcw },
+    { name: 'Достижения', path: '/gamification', icon: Trophy },
   ];
 
   return (

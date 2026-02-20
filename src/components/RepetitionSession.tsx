@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle, XCircle, Brain, Target, TrendingUp, Calendar, ArrowRight, RotateCcw } from 'lucide-react';
 import { repetitionSystem, RepetitionItem, RepetitionSession as IRepetitionSession } from '../utils/intervalRepetition';
+import { gamificationSystem } from '../utils/gamification';
 
 interface RepetitionSessionProps {
   onComplete?: (results: { accuracy: number; duration: number }) => void;
@@ -63,11 +64,30 @@ const RepetitionSession: React.FC<RepetitionSessionProps> = ({ onComplete, onClo
   const handleSessionComplete = () => {
     if (!session) return;
 
+    // Calculate and award points for repetition session
+    const accuracy = results.length > 0 ? (results.filter(r => r.isCorrect).length / results.length) * 100 : 0;
+    const duration = Math.round((Date.now() - session.date.getTime()) / 60000);
+    
+    const { points, multiplier } = gamificationSystem.calculatePoints('repetition_session', {
+      accuracy,
+      duration,
+      itemCount: results.length,
+      streak: gamificationSystem.getUserStats().currentStreak
+    });
+    
+    gamificationSystem.awardPoints('Repetition Session', 'repetition', points, multiplier);
+    
+    // Update statistics
+    gamificationSystem.updateStats({
+      totalSessions: gamificationSystem.getUserStats().totalSessions + 1,
+      totalCorrectAnswers: gamificationSystem.getUserStats().totalCorrectAnswers + results.filter(r => r.isCorrect).length,
+      totalQuestions: gamificationSystem.getUserStats().totalQuestions + results.length,
+      timeSpentLearning: gamificationSystem.getUserStats().timeSpentLearning + duration
+    });
+    
     repetitionSystem.completeSession(session.id, results);
     setSessionComplete(true);
 
-    const accuracy = results.length > 0 ? (results.filter(r => r.isCorrect).length / results.length) * 100 : 0;
-    const duration = Math.round((Date.now() - session.date.getTime()) / 60000);
 
     onComplete?.({ accuracy, duration });
   };
@@ -146,6 +166,24 @@ const RepetitionSession: React.FC<RepetitionSessionProps> = ({ onComplete, onClo
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Сессия завершена!</h3>
             <p className="text-gray-600">Ваши результаты повторения</p>
+          </div>
+          
+          {/* Points Earned */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <Award className="h-5 w-5 text-yellow-600" />
+              <span className="font-semibold text-gray-900">Очки получены!</span>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-green-600">
+                +{gamificationSystem.calculatePoints('repetition_session', { 
+                  accuracy, 
+                  duration,
+                  itemCount: results.length 
+                }).points} очков
+              </div>
+              <div className="text-sm text-gray-600">За сессию повторения</div>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-6">

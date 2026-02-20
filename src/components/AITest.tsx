@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award, AlertTriangle, Brain, TrendingUp, Calendar, RotateCcw } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
+import { gamificationSystem } from '../utils/gamification';
 
 interface Question {
   id: number;
@@ -174,6 +175,46 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
   const handleFinishTest = () => {
     setShowResults(true);
     
+    // Calculate points and update gamification system
+    const correctAnswers = calculateScore();
+    const accuracy = Math.round((correctAnswers / questions.length) * 100);
+    const timeSpent = Math.round((Date.now() - Date.now()) / 60000); // Placeholder for actual time
+    
+    // Award points for test completion
+    const { points, multiplier } = gamificationSystem.calculatePoints('test_completion', {
+      accuracy,
+      totalQuestions: questions.length,
+      timeSpent
+    });
+    
+    const totalPoints = gamificationSystem.awardPoints('AI Test Completion', 'ai-fundamentals', points, multiplier);
+    
+    // Award points for each correct answer
+    questions.forEach((question, index) => {
+      const userAnswer = selectedAnswers[index];
+      if (userAnswer !== undefined && userAnswer === question.correctAnswer) {
+        const { points: answerPoints, multiplier: answerMultiplier } = gamificationSystem.calculatePoints('correct_answer', {
+          difficulty: question.difficulty || 'medium',
+          category: question.category || 'ai-fundamentals'
+        });
+        gamificationSystem.awardPoints('Correct Answer', question.category || 'ai-fundamentals', answerPoints, answerMultiplier);
+      }
+    });
+    
+    // Update user statistics
+    gamificationSystem.updateStats({
+      totalSessions: gamificationSystem.getUserStats().totalSessions + 1,
+      totalCorrectAnswers: gamificationSystem.getUserStats().totalCorrectAnswers + correctAnswers,
+      totalQuestions: gamificationSystem.getUserStats().totalQuestions + questions.length,
+      averageAccuracy: accuracy,
+      timeSpentLearning: gamificationSystem.getUserStats().timeSpentLearning + timeSpent
+    });
+    
+    // Check for perfect score achievement
+    if (accuracy === 100) {
+      gamificationSystem.awardPoints('Perfect Score', 'achievement', 100, 1);
+    }
+    
     // Add incorrect answers to repetition system
     questions.forEach((question, index) => {
       const userAnswer = selectedAnswers[index];
@@ -288,6 +329,22 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
             <p className="text-xl text-gray-600">
               Ваш результат: {score} из {questions.length} ({percentage}%)
             </p>
+            
+            {/* Points Earned Display */}
+            <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Award className="h-5 w-5 text-yellow-600" />
+                <span className="font-semibold text-gray-900">Очки получены!</span>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  +{gamificationSystem.calculatePoints('test_completion', { accuracy: percentage }).points} очков
+                </div>
+                <div className="text-sm text-gray-600">
+                  За завершение теста + бонусы за правильные ответы
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Repetition Analysis Alert */}
@@ -322,6 +379,12 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
                       <div className="text-lg font-bold text-blue-600">{analysis.incorrectQuestions.length}</div>
                       <div className="text-xs text-gray-600">Вопросов для повторения</div>
                     </div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg">
+                    <div className="text-lg font-bold text-green-600">
+                      +{gamificationSystem.calculatePoints('test_completion', { accuracy: percentage }).points}
+                    </div>
+                    <div className="text-xs text-gray-600">Очков получено</div>
                   </div>
                 </div>
               </div>

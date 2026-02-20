@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, Star, Users, Trophy, Clock, RotateCcw } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
   const features = [
@@ -53,6 +54,13 @@ const LandingPage: React.FC = () => {
       description: 'Научно обоснованная система запоминания с оптимальными интервалами',
       path: '/repetition',
       color: 'bg-teal-100 text-teal-600'
+    },
+    {
+      icon: Award,
+      title: 'Система достижений',
+      description: 'Отслеживайте прогресс, получайте очки и открывайте достижения за успехи в обучении',
+      path: '/gamification',
+      color: 'bg-yellow-100 text-yellow-600'
     },
   ];
 

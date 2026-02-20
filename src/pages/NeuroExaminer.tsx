@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Play, Clock, Target, TrendingUp, Award, ChevronRight, Zap, BarChart, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
+import { gamificationSystem } from '../utils/gamification';
 
 interface Question {
   id: number;
@@ -335,6 +336,29 @@ const NeuroExaminer: React.FC = () => {
 
   const finishTest = () => {
     if (testSession) {
+      // Calculate and award points
+      const accuracy = Math.round((testSession.score / testSession.answeredQuestions.length) * 100);
+      const timeSpent = Math.round((Date.now() - testSession.timeStarted.getTime()) / 60000);
+      
+      // Award points for adaptive test completion
+      const { points, multiplier } = gamificationSystem.calculatePoints('test_completion', {
+        accuracy,
+        totalQuestions: testSession.answeredQuestions.length,
+        timeSpent,
+        isAdaptive: selectedMode === 'adaptive'
+      });
+      
+      gamificationSystem.awardPoints('Adaptive Test', 'ai-fundamentals', points, multiplier);
+      
+      // Update user statistics
+      gamificationSystem.updateStats({
+        totalSessions: gamificationSystem.getUserStats().totalSessions + 1,
+        totalCorrectAnswers: gamificationSystem.getUserStats().totalCorrectAnswers + testSession.score,
+        totalQuestions: gamificationSystem.getUserStats().totalQuestions + testSession.answeredQuestions.length,
+        averageAccuracy: accuracy,
+        timeSpentLearning: gamificationSystem.getUserStats().timeSpentLearning + timeSpent
+      });
+      
       // Add incorrect answers to repetition system
       questions.forEach((question, index) => {
         const userAnswerIndex = testSession.userAnswers[index];
@@ -398,6 +422,25 @@ const NeuroExaminer: React.FC = () => {
             <p className="text-xl text-gray-600 mb-6">
               Ваш результат: {testSession.score} из {testSession.answeredQuestions.length} ({percentage}%)
             </p>
+            
+            {/* Points Display */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Award className="h-5 w-5 text-yellow-600" />
+                <span className="font-semibold text-gray-900">Очки получены!</span>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-purple-600">
+                  +{gamificationSystem.calculatePoints('test_completion', { 
+                    accuracy: percentage, 
+                    isAdaptive: selectedMode === 'adaptive' 
+                  }).points} очков
+                </div>
+                <div className="text-sm text-gray-600">
+                  {selectedMode === 'adaptive' ? 'Адаптивный тест' : 'Стандартный тест'}
+                </div>
+              </div>
+            </div>
             
             <div className="bg-gray-50 rounded-xl p-6 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Статистика теста</h3>

@@ -14,6 +14,7 @@ import FileSystemCourse from './pages/FileSystemCourse';
 import RationalExpressionsCourse from './pages/RationalExpressionsCourse';
 import ProbabilityTheoryCourse from './pages/ProbabilityTheoryCourse';
 import RepetitionPage from './pages/RepetitionPage';
+import GamificationPage from './pages/GamificationPage';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path="/rational-expressions-course" element={<RationalExpressionsCourse />} />
             <Route path="/probability-theory-course" element={<ProbabilityTheoryCourse />} />
             <Route path="/repetition" element={<RepetitionPage />} />
+            <Route path="/gamification" element={<GamificationPage />} />
           </Routes>
         </motion.main>
       </div>
