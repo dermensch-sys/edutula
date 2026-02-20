@@ -37,7 +37,7 @@ export class IntervalRepetitionSystem {
   }
 
   // Add new item to repetition system
-  addItem(content: string, category: string, difficulty: 'easy' | 'medium' | 'hard', context: string): RepetitionItem {
+  addItem(content: string, category: string, difficulty: 'easy' | 'medium' | 'hard', context: string, metadata?: any): RepetitionItem {
     const item: RepetitionItem = {
       id: this.generateId(),
       content,
@@ -49,7 +49,8 @@ export class IntervalRepetitionSystem {
       repetitionCount: 0,
       easeFactor: 2.5,
       interval: 1,
-      context
+      context,
+      ...metadata
     };
 
     this.items.set(item.id, item);

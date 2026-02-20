@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award, AlertTriangle, Brain, TrendingUp, Calendar, RotateCcw } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
 
 interface Question {
@@ -207,13 +207,72 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
   const score = calculateScore();
   const percentage = Math.round((score / questions.length) * 100);
 
+  // Analysis of results for repetition recommendations
+  const analyzeResults = () => {
+    const incorrectQuestions = questions.filter((question, index) => 
+      selectedAnswers[index] !== undefined && selectedAnswers[index] !== question.correctAnswer
+    );
+    
+    const categoryErrors: { [key: string]: number } = {};
+    const totalByCategory: { [key: string]: number } = {};
+    
+    questions.forEach((question, index) => {
+      const category = question.category || 'general';
+      totalByCategory[category] = (totalByCategory[category] || 0) + 1;
+      
+      if (selectedAnswers[index] !== undefined && selectedAnswers[index] !== question.correctAnswer) {
+        categoryErrors[category] = (categoryErrors[category] || 0) + 1;
+      }
+    });
+    
+    const weakAreas = Object.keys(categoryErrors).map(category => ({
+      category,
+      errorRate: (categoryErrors[category] / totalByCategory[category]) * 100,
+      errorCount: categoryErrors[category],
+      totalCount: totalByCategory[category]
+    })).filter(area => area.errorRate > 0).sort((a, b) => b.errorRate - a.errorRate);
+    
+    return {
+      incorrectQuestions,
+      weakAreas,
+      needsRepetition: incorrectQuestions.length > 0,
+      criticalAreas: weakAreas.filter(area => area.errorRate >= 50),
+      moderateAreas: weakAreas.filter(area => area.errorRate >= 25 && area.errorRate < 50),
+      minorAreas: weakAreas.filter(area => area.errorRate < 25)
+    };
+  };
+
+  const getRepetitionSchedule = (errorRate: number) => {
+    if (errorRate >= 75) return { interval: '24 часа', priority: 'Критический', color: 'text-red-600 bg-red-100' };
+    if (errorRate >= 50) return { interval: '2-3 дня', priority: 'Высокий', color: 'text-orange-600 bg-orange-100' };
+    if (errorRate >= 25) return { interval: '1 неделя', priority: 'Средний', color: 'text-yellow-600 bg-yellow-100' };
+    return { interval: '2 недели', priority: 'Низкий', color: 'text-green-600 bg-green-100' };
+  };
+
+  const getCategoryDisplayName = (category: string) => {
+    const categoryNames: { [key: string]: string } = {
+      'ai-basics': 'Основы ИИ',
+      'machine-learning': 'Машинное обучение',
+      'neural-networks': 'Нейронные сети',
+      'deep-learning': 'Глубокое обучение',
+      'nlp': 'Обработка языка',
+      'computer-vision': 'Компьютерное зрение',
+      'ai-history': 'История ИИ',
+      'algorithms': 'Алгоритмы',
+      'general': 'Общие вопросы'
+    };
+    return categoryNames[category] || category;
+  };
+
   if (showResults) {
+    const analysis = analyzeResults();
+    
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
         >
           <div className="text-center mb-8">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
@@ -231,46 +290,163 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
             </p>
           </div>
 
-          <div className="space-y-6">
-            {questions.map((question, index) => {
-              const userAnswer = selectedAnswers[index];
-              const isCorrect = userAnswer === question.correctAnswer;
-              
-              return (
-                <div key={question.id} className="border rounded-lg p-4">
-                  <div className="flex items-start space-x-3 mb-3">
-                    {isCorrect ? (
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-600 mt-1 flex-shrink-0" />
-                    )}
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 mb-2">
-                        {index + 1}. {question.question}
-                      </h4>
-                      <div className="space-y-1 text-sm">
-                        <p className={`${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                          Ваш ответ: {userAnswer !== undefined ? question.options[userAnswer] : 'Не отвечено'}
-                        </p>
-                        {!isCorrect && (
-                          <p className="text-green-700">
-                            Правильный ответ: {question.options[question.correctAnswer]}
-                          </p>
-                        )}
-                        {question.explanation && (
-                          <p className="text-gray-600 mt-2 italic">
-                            {question.explanation}
-                          </p>
-                        )}
-                      </div>
+          {/* Repetition Analysis Alert */}
+          {analysis.needsRepetition && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-8"
+            >
+              <div className="flex items-start space-x-4">
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <RotateCcw className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Рекомендуется интервальное повторение
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    Обнаружены пробелы в знаниях по {analysis.incorrectQuestions.length} вопросам. 
+                    Эти материалы автоматически добавлены в систему интервального повторения для оптимального запоминания.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-white rounded-lg">
+                      <div className="text-lg font-bold text-red-600">{analysis.criticalAreas.length}</div>
+                      <div className="text-xs text-gray-600">Критических областей</div>
+                    </div>
+                    <div className="text-center p-3 bg-white rounded-lg">
+                      <div className="text-lg font-bold text-orange-600">{analysis.moderateAreas.length}</div>
+                      <div className="text-xs text-gray-600">Умеренных проблем</div>
+                    </div>
+                    <div className="text-center p-3 bg-white rounded-lg">
+                      <div className="text-lg font-bold text-blue-600">{analysis.incorrectQuestions.length}</div>
+                      <div className="text-xs text-gray-600">Вопросов для повторения</div>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Weak Areas Analysis */}
+          {analysis.weakAreas.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <Brain className="h-5 w-5 mr-2 text-blue-600" />
+                Анализ слабых мест
+              </h3>
+              <div className="space-y-4">
+                {analysis.weakAreas.map((area) => {
+                  const schedule = getRepetitionSchedule(area.errorRate);
+                  return (
+                    <div key={area.category} className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <h4 className="font-semibold text-gray-900">
+                            {getCategoryDisplayName(area.category)}
+                          </h4>
+                          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${schedule.color}`}>
+                            {schedule.priority}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-900">
+                            {area.errorCount}/{area.totalCount} ошибок
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {Math.round(area.errorRate)}% ошибок
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <Calendar className="h-4 w-4" />
+                          <span>Следующее повторение: {schedule.interval}</span>
+                        </div>
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              area.errorRate >= 75 ? 'bg-red-500' :
+                              area.errorRate >= 50 ? 'bg-orange-500' :
+                              area.errorRate >= 25 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(area.errorRate, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Question Analysis */}
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Подробный анализ ответов</h3>
+            <div className="space-y-4 max-h-64 overflow-y-auto">
+              {questions.map((question, index) => {
+                const userAnswer = selectedAnswers[index];
+                const isCorrect = userAnswer === question.correctAnswer;
+                
+                return (
+                  <div key={question.id} className={`border rounded-lg p-4 ${
+                    isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                  }`}>
+                    <div className="flex items-start space-x-3 mb-3">
+                      {isCorrect ? (
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-1 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600 mt-1 flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900">
+                            {index + 1}. {question.question}
+                          </h4>
+                          {!isCorrect && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-lg">
+                              Добавлено в повторение
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <p className={`${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                            Ваш ответ: {userAnswer !== undefined ? question.options[userAnswer] : 'Не отвечено'}
+                          </p>
+                          {!isCorrect && (
+                            <p className="text-green-700">
+                              Правильный ответ: {question.options[question.correctAnswer]}
+                            </p>
+                          )}
+                          {question.explanation && (
+                            <p className="text-gray-600 mt-2 italic">
+                              {question.explanation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex justify-center mt-8">
+          {/* Action Buttons */}
+          <div className="flex justify-center space-x-4">
+            {analysis.needsRepetition && (
+              <button
+                onClick={() => {
+                  // Navigate to repetition page
+                  window.location.href = '/repetition';
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-colors flex items-center"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Перейти к повторению
+              </button>
+            )}
             <button
               onClick={onClose}
               className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
