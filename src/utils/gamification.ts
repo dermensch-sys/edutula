@@ -49,10 +49,51 @@ export class GamificationSystem {
   private achievements: Map<string, Achievement> = new Map();
   private unlockedAchievements: Set<string> = new Set();
   private progressHistory: ProgressEntry[] = [];
+  private currentUserId: string | null = null;
 
   constructor() {
     this.initializeAchievements();
-    this.loadUserData();
+    this.initializeForCurrentUser();
+  }
+
+  // Initialize for current user
+  private initializeForCurrentUser(): void {
+    // This will be called when user logs in
+    const userId = this.getCurrentUserId();
+    if (userId) {
+      this.currentUserId = userId;
+      this.loadUserData(userId);
+    } else {
+      this.initializeUserStats();
+    }
+  }
+
+  // Set current user (called when user logs in/out)
+  setCurrentUser(userId: string | null): void {
+    if (this.currentUserId !== userId) {
+      // Save current user's data before switching
+      if (this.currentUserId) {
+        this.saveUserData(this.currentUserId);
+      }
+      
+      this.currentUserId = userId;
+      
+      if (userId) {
+        this.loadUserData(userId);
+      } else {
+        this.initializeUserStats();
+      }
+    }
+  }
+
+  private getCurrentUserId(): string | null {
+    // This should integrate with your auth system
+    try {
+      const currentUserId = localStorage.getItem('currentUserId');
+      return currentUserId;
+    } catch {
+      return null;
+    }
   }
 
   // Initialize all available achievements
@@ -540,19 +581,22 @@ export class GamificationSystem {
   }
 
   // Save user data to localStorage
-  private saveUserData(): void {
+  private saveUserData(userId?: string): void {
+    const targetUserId = userId || this.currentUserId;
+    if (!targetUserId) return;
+    
     const data = {
       userStats: this.userStats,
       unlockedAchievements: Array.from(this.unlockedAchievements),
       progressHistory: this.progressHistory
     };
-    localStorage.setItem('gamificationData', JSON.stringify(data));
+    localStorage.setItem(`gamificationData_${targetUserId}`, JSON.stringify(data));
   }
 
   // Load user data from localStorage
-  private loadUserData(): void {
+  private loadUserData(userId: string): void {
     try {
-      const data = localStorage.getItem('gamificationData');
+      const data = localStorage.getItem(`gamificationData_${userId}`);
       if (data) {
         const parsed = JSON.parse(data);
         this.userStats = {
@@ -568,8 +612,7 @@ export class GamificationSystem {
       } else {
         this.initializeUserStats();
       }
-    } catch (error) {
-      console.error('Failed to load gamification data:', error);
+    } catch {
       this.initializeUserStats();
     }
   }

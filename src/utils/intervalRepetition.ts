@@ -28,12 +28,50 @@ export interface RepetitionSession {
 export class IntervalRepetitionSystem {
   private items: Map<string, RepetitionItem> = new Map();
   private sessions: RepetitionSession[] = [];
+  private currentUserId: string | null = null;
 
   // Standard spaced repetition intervals (in days)
   private readonly INITIAL_INTERVALS = [1, 7, 16, 35, 62, 120, 240];
 
   constructor() {
-    this.loadFromStorage();
+    this.initializeForCurrentUser();
+  }
+
+  // Initialize for current user
+  private initializeForCurrentUser(): void {
+    const userId = this.getCurrentUserId();
+    if (userId) {
+      this.currentUserId = userId;
+      this.loadFromStorage(userId);
+    }
+  }
+
+  // Set current user
+  setCurrentUser(userId: string | null): void {
+    if (this.currentUserId !== userId) {
+      // Save current user's data before switching
+      if (this.currentUserId) {
+        this.saveToStorage(this.currentUserId);
+      }
+      
+      this.currentUserId = userId;
+      
+      if (userId) {
+        this.loadFromStorage(userId);
+      } else {
+        // Clear data for logged out state
+        this.items.clear();
+        this.sessions = [];
+      }
+    }
+  }
+
+  private getCurrentUserId(): string | null {
+    try {
+      return localStorage.getItem('currentUserId');
+    } catch {
+      return null;
+    }
   }
 
   // Add new item to repetition system
@@ -307,17 +345,20 @@ export class IntervalRepetitionSystem {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  private saveToStorage(): void {
+  private saveToStorage(userId?: string): void {
+    const targetUserId = userId || this.currentUserId;
+    if (!targetUserId) return;
+    
     const data = {
       items: Array.from(this.items.entries()),
       sessions: this.sessions
     };
-    localStorage.setItem('intervalRepetition', JSON.stringify(data));
+    localStorage.setItem(`intervalRepetition_${targetUserId}`, JSON.stringify(data));
   }
 
-  private loadFromStorage(): void {
+  private loadFromStorage(userId: string): void {
     try {
-      const data = localStorage.getItem('intervalRepetition');
+      const data = localStorage.getItem(`intervalRepetition_${userId}`);
       if (data) {
         const parsed = JSON.parse(data);
         this.items = new Map(parsed.items.map(([id, item]: [string, any]) => [
@@ -334,8 +375,10 @@ export class IntervalRepetitionSystem {
           date: new Date(session.date)
         }));
       }
-    } catch (error) {
-      console.error('Failed to load repetition data:', error);
+    } catch {
+      // Initialize empty data on error
+      this.items.clear();
+      this.sessions = [];
     }
   }
 }

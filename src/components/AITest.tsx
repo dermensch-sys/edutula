@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award, AlertTriangle, Brain, TrendingUp, Calendar, RotateCcw } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
 import { gamificationSystem } from '../utils/gamification';
+import { authService } from '../utils/auth';
+import { educationalTrajectoryService } from '../utils/educationalTrajectory';
 
 interface Question {
   id: number;
@@ -175,6 +177,9 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
   const handleFinishTest = () => {
     setShowResults(true);
     
+    // Get current user
+    const user = authService.getCurrentUser();
+    
     // Calculate points and update gamification system
     const correctAnswers = calculateScore();
     const accuracy = Math.round((correctAnswers / questions.length) * 100);
@@ -213,6 +218,31 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
     // Check for perfect score achievement
     if (accuracy === 100) {
       gamificationSystem.awardPoints('Perfect Score', 'achievement', 100, 1);
+    }
+    
+    // Create or adapt educational trajectory based on test results
+    if (user) {
+      const testResults = questions.map((question, index) => ({
+        questionId: question.id,
+        question: question.question,
+        category: question.category || 'ai-fundamentals',
+        difficulty: question.difficulty || 'medium',
+        isCorrect: selectedAnswers[index] === question.correctAnswer,
+        userAnswer: selectedAnswers[index],
+        correctAnswer: question.correctAnswer,
+        topic: question.category || 'general'
+      }));
+      
+      // Check if user already has a learning path
+      const existingPath = educationalTrajectoryService.getUserPath(user.id);
+      
+      if (existingPath) {
+        // Adapt existing path based on new results
+        educationalTrajectoryService.adaptPath(user.id, testResults);
+      } else {
+        // Create new personalized path
+        educationalTrajectoryService.createPersonalizedPath(user.id, testResults, user.profile);
+      }
     }
     
     // Add incorrect answers to repetition system

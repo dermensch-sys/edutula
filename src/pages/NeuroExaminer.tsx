@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Brain, Play, Clock, Target, TrendingUp, Award, ChevronRight, Zap, BarChart, ArrowLeft, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
 import { gamificationSystem } from '../utils/gamification';
+import { authService } from '../utils/auth';
+import { educationalTrajectoryService } from '../utils/educationalTrajectory';
 
 interface Question {
   id: number;
@@ -336,6 +338,9 @@ const NeuroExaminer: React.FC = () => {
 
   const finishTest = () => {
     if (testSession) {
+      // Get current user
+      const user = authService.getCurrentUser();
+      
       // Calculate and award points
       const accuracy = Math.round((testSession.score / testSession.answeredQuestions.length) * 100);
       const timeSpent = Math.round((Date.now() - testSession.timeStarted.getTime()) / 60000);
@@ -358,6 +363,28 @@ const NeuroExaminer: React.FC = () => {
         averageAccuracy: accuracy,
         timeSpentLearning: gamificationSystem.getUserStats().timeSpentLearning + timeSpent
       });
+      
+      // Create or adapt educational trajectory
+      if (user) {
+        const testResults = questions.map((question, index) => ({
+          questionId: question.id,
+          question: question.question,
+          category: 'ai-fundamentals',
+          difficulty: question.difficulty,
+          isCorrect: testSession.userAnswers[index] === question.correctAnswer,
+          userAnswer: testSession.userAnswers[index],
+          correctAnswer: question.correctAnswer,
+          topic: 'ai-fundamentals'
+        }));
+        
+        const existingPath = educationalTrajectoryService.getUserPath(user.id);
+        
+        if (existingPath) {
+          educationalTrajectoryService.adaptPath(user.id, testResults);
+        } else {
+          educationalTrajectoryService.createPersonalizedPath(user.id, testResults, user.profile);
+        }
+      }
       
       // Add incorrect answers to repetition system
       questions.forEach((question, index) => {

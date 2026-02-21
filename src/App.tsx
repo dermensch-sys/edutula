@@ -1,4 +1,5 @@
 import React from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from './components/Navbar';
@@ -15,8 +16,22 @@ import RationalExpressionsCourse from './pages/RationalExpressionsCourse';
 import ProbabilityTheoryCourse from './pages/ProbabilityTheoryCourse';
 import RepetitionPage from './pages/RepetitionPage';
 import GamificationPage from './pages/GamificationPage';
+import { authService } from './utils/auth';
+import { gamificationSystem } from './utils/gamification';
+import { repetitionSystem } from './utils/intervalRepetition';
 
 function App() {
+  useEffect(() => {
+    // Initialize systems with current user
+    const unsubscribe = authService.onAuthStateChange((user) => {
+      const userId = user?.id || null;
+      gamificationSystem.setCurrentUser(userId);
+      repetitionSystem.setCurrentUser(userId);
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
     <Router>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
