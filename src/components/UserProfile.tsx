@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Settings, LogOut, BookOpen, Target, TrendingUp, Calendar, Award, Edit2, Save, X } from 'lucide-react';
+import { User, Settings, LogOut, BookOpen, Target, TrendingUp, Calendar, Award, CreditCard as Edit2, Save, X } from 'lucide-react';
 import { authService, User as UserType } from '../utils/auth';
 import { educationalTrajectoryService } from '../utils/educationalTrajectory';
 import { gamificationSystem } from '../utils/gamification';
