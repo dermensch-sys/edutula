@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, GraduationCap, RotateCcw } from 'lucide-react';
-import { Trophy } from 'lucide-react';
+import { Menu, X, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, GraduationCap, RotateCcw, Trophy, User, LogIn, Route } from 'lucide-react';
+import { authService } from '../utils/auth';
+import AuthModal from './AuthModal';
+import UserProfile from './UserProfile';
+import LearningTrajectory from './LearningTrajectory';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showTrajectory, setShowTrajectory] = useState(false);
+  const [user, setUser] = useState(authService.getCurrentUser());
   const location = useLocation();
+
+  React.useEffect(() => {
+    const unsubscribe = authService.onAuthStateChange((newUser) => {
+      setUser(newUser);
+    });
+    return unsubscribe;
+  }, []);
 
   const navItems = [
     { name: 'Теория', path: '/theory', icon: BookOpen },
@@ -52,6 +66,36 @@ const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+            
+            {/* User Menu */}
+            <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
+              {user ? (
+                <>
+                  <button
+                    onClick={() => setShowTrajectory(true)}
+                    className="flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                  >
+                    <Route className="h-4 w-4" />
+                    <span>Траектория</span>
+                  </button>
+                  <button
+                    onClick={() => setShowProfile(true)}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>{user.name}</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center space-x-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Войти</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -94,9 +138,65 @@ const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+            
+            {/* Mobile User Menu */}
+            <div className="border-t border-gray-200 pt-2 mt-2">
+              {user ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowTrajectory(true);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 w-full"
+                  >
+                    <Route className="h-5 w-5" />
+                    <span>Траектория</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfile(true);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 w-full"
+                  >
+                    <User className="h-5 w-5" />
+                    <span>{user.name}</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 w-full"
+                >
+                  <LogIn className="h-5 w-5" />
+                  <span>Войти</span>
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
       )}
+      
+      {/* Modals */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => setShowAuthModal(false)}
+      />
+      
+      <UserProfile
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+      />
+      
+      <LearningTrajectory
+        isOpen={showTrajectory}
+        onClose={() => setShowTrajectory(false)}
+      />
     </nav>
   );
 };
