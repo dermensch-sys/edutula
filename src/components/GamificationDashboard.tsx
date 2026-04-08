@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Zap, Target, Calendar, TrendingUp, Award, Clock, Brain, Medal, Crown, Gem } from 'lucide-react';
+import { Trophy, Star, Zap, Target, Calendar, Award, Clock, Brain, Medal, Crown, Gem } from 'lucide-react';
 import { gamificationSystem, Achievement, UserStats, ProgressEntry } from '../utils/gamification';
 
 const GamificationDashboard: React.FC = () => {
@@ -8,7 +8,6 @@ const GamificationDashboard: React.FC = () => {
   const [recentAchievements, setRecentAchievements] = useState<Achievement[]>([]);
   const [nextAchievements, setNextAchievements] = useState<Array<Achievement & { progress: number }>>([]);
   const [progressData, setProgressData] = useState<ProgressEntry[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
     loadData();
@@ -38,17 +37,6 @@ const GamificationDashboard: React.FC = () => {
       case 'epic': return <Crown className="h-4 w-4" />;
       case 'legendary': return <Gem className="h-4 w-4" />;
       default: return <Medal className="h-4 w-4" />;
-    }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'learning': return <Brain className="h-5 w-5" />;
-      case 'consistency': return <Calendar className="h-5 w-5" />;
-      case 'mastery': return <Target className="h-5 w-5" />;
-      case 'milestone': return <Trophy className="h-5 w-5" />;
-      case 'special': return <Zap className="h-5 w-5" />;
-      default: return <Award className="h-5 w-5" />;
     }
   };
 

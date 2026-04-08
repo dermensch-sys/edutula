@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award, AlertTriangle, Brain, TrendingUp, Calendar, RotateCcw } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowRight, ArrowLeft, Clock, Award, Brain, Calendar, RotateCcw } from 'lucide-react';
 import { repetitionSystem } from '../utils/intervalRepetition';
 import { gamificationSystem } from '../utils/gamification';
 import { authService } from '../utils/auth';
@@ -154,7 +154,7 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
     } else if (timeLeft === 0 && !showResults) {
       handleFinishTest();
     }
-  }, [timeLeft, showResults]);
+  }, [timeLeft, showResults, handleFinishTest]);
 
   const handleAnswerSelect = (answerIndex: number) => {
     const newAnswers = [...selectedAnswers];
@@ -192,7 +192,7 @@ const AITest: React.FC<AITestProps> = ({ onClose }) => {
       timeSpent
     });
     
-    const totalPoints = gamificationSystem.awardPoints('AI Test Completion', 'ai-fundamentals', points, multiplier);
+    gamificationSystem.awardPoints('AI Test Completion', 'ai-fundamentals', points, multiplier);
     
     // Award points for each correct answer
     questions.forEach((question, index) => {

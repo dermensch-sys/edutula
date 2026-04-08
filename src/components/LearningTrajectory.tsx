@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Target, CheckCircle, Clock, TrendingUp, ArrowRight, Play, Award, Brain } from 'lucide-react';
+import { BookOpen, Target, CheckCircle, Clock, ArrowRight, Play, Award, Brain } from 'lucide-react';
 import { educationalTrajectoryService, LearningPath, TrajectoryStep } from '../utils/educationalTrajectory';
 import { authService } from '../utils/auth';
 
@@ -12,7 +12,6 @@ interface LearningTrajectoryProps {
 const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose }) => {
   const [learningPath, setLearningPath] = useState<LearningPath | null>(null);
   const [nextStep, setNextStep] = useState<TrajectoryStep | null>(null);
-  const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen) {
