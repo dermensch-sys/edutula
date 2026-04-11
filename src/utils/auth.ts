@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  isAdmin: boolean;
   createdAt: Date;
   lastLoginAt: Date;
   preferences: {
@@ -48,6 +49,42 @@ export class AuthService {
 
   constructor() {
     this.loadUserFromStorage();
+    this.initializeAdminUser();
+  }
+
+  private initializeAdminUser(): void {
+    const ADMIN_EMAIL = 'dermensch@mail.ru';
+    const users = this.getAllUsers();
+    const adminUser = users.find(u => u.email === ADMIN_EMAIL);
+
+    if (!adminUser) {
+      const newAdminUser: User = {
+        id: this.generateUserId(),
+        email: ADMIN_EMAIL,
+        name: 'System Administrator',
+        isAdmin: true,
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+        preferences: {
+          language: 'ru',
+          theme: 'light',
+          notifications: true,
+          dailyGoal: 30
+        },
+        profile: {
+          level: 'advanced',
+          interests: [],
+          goals: [],
+          studyTime: 30
+        }
+      };
+
+      this.saveUser(newAdminUser);
+      this.savePassword(newAdminUser.id, 'admin123');
+    } else if (!adminUser.isAdmin) {
+      adminUser.isAdmin = true;
+      this.saveUser(adminUser);
+    }
   }
 
   // Register new user
@@ -73,6 +110,7 @@ export class AuthService {
         id: this.generateUserId(),
         email: data.email,
         name: data.name,
+        isAdmin: false,
         createdAt: new Date(),
         lastLoginAt: new Date(),
         preferences: {
@@ -223,6 +261,31 @@ export class AuthService {
   // Save password (in real app, this would be hashed)
   savePassword(userId: string, password: string): void {
     localStorage.setItem(`password_${userId}`, password);
+  }
+
+  // Set admin role for a user
+  setAdminRole(email: string, isAdmin: boolean): void {
+    const users = this.getAllUsers();
+    const user = users.find(u => u.email === email);
+
+    if (user) {
+      user.isAdmin = isAdmin;
+      this.saveUser(user);
+
+      if (this.currentUser?.email === email) {
+        this.currentUser.isAdmin = isAdmin;
+        this.notifyListeners();
+      }
+    }
+  }
+
+  // Check if user is admin
+  isAdmin(): boolean {
+    return this.currentUser?.isAdmin ?? false;
+  }
+
+  private notifyListeners(): void {
+    this.authListeners.forEach(callback => callback(this.currentUser));
   }
 }
 
