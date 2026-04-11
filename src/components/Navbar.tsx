@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, GraduationCap, RotateCcw, Trophy, User, LogIn, Route } from 'lucide-react';
+import { Menu, X, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, GraduationCap, RotateCcw, Trophy, User, LogIn, Route, Shield } from 'lucide-react';
 import { authService } from '../utils/auth';
 import AuthModal from './AuthModal';
 import UserProfile from './UserProfile';
@@ -32,6 +32,8 @@ const Navbar: React.FC = () => {
     { name: 'Повторение', path: '/repetition', icon: RotateCcw },
     { name: 'Достижения', path: '/gamification', icon: Trophy },
   ];
+
+  const adminItem = { name: 'Администратор', path: '/admin', icon: Shield };
 
   return (
     <nav className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
@@ -66,7 +68,19 @@ const Navbar: React.FC = () => {
                 </Link>
               );
             })}
-            
+
+            <Link
+              to={adminItem.path}
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                location.pathname === adminItem.path
+                  ? 'bg-orange-100 text-orange-700'
+                  : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              <span>{adminItem.name}</span>
+            </Link>
+
             {/* User Menu */}
             <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
               {user ? (
@@ -138,6 +152,19 @@ const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+
+            <Link
+              to={adminItem.path}
+              onClick={() => setIsOpen(false)}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
+                location.pathname === adminItem.path
+                  ? 'bg-orange-100 text-orange-700'
+                  : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+              }`}
+            >
+              <Shield className="h-5 w-5" />
+              <span>{adminItem.name}</span>
+            </Link>
             
             {/* Mobile User Menu */}
             <div className="border-t border-gray-200 pt-2 mt-2">

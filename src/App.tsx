@@ -16,6 +16,7 @@ import RationalExpressionsCourse from './pages/RationalExpressionsCourse';
 import ProbabilityTheoryCourse from './pages/ProbabilityTheoryCourse';
 import RepetitionPage from './pages/RepetitionPage';
 import GamificationPage from './pages/GamificationPage';
+import AdminPanel from './pages/AdminPanel';
 import { authService } from './utils/auth';
 import { gamificationSystem } from './utils/gamification';
 import { repetitionSystem } from './utils/intervalRepetition';
@@ -55,6 +56,7 @@ function App() {
             <Route path="/probability-theory-course" element={<ProbabilityTheoryCourse />} />
             <Route path="/repetition" element={<RepetitionPage />} />
             <Route path="/gamification" element={<GamificationPage />} />
+            <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </motion.main>
       </div>
