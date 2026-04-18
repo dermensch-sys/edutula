@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { LogOut, Users, Settings, BarChart3, Shield, CreditCard as Edit2, Save, X } from 'lucide-react';
 import { authService, User as UserType } from '../utils/auth';
 import AuthModal from '../components/AuthModal';
+import UserManagement from '../components/UserManagement';
 
 const AdminPanel: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -10,6 +11,7 @@ const AdminPanel: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<UserType>>({});
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | null>(null);
 
   React.useEffect(() => {
     const currentUser = authService.getCurrentUser();
@@ -245,6 +247,24 @@ const AdminPanel: React.FC = () => {
   }
 
   // Admin view
+  if (activeSection === 'users') {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-8 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <button
+              onClick={() => setActiveSection('dashboard')}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
+            >
+              ← Вернуться в панель
+            </button>
+          </div>
+          <UserManagement onClose={() => setActiveSection('dashboard')} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 pt-8 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -273,14 +293,21 @@ const AdminPanel: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {adminMenuItems.map((item, index) => {
               const Icon = item.icon;
+              const handleItemClick = () => {
+                if (item.title === 'Управление пользователями') {
+                  setActiveSection('users');
+                }
+              };
+
               return (
-                <motion.div
+                <motion.button
                   key={index}
+                  onClick={handleItemClick}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   whileHover={{ y: -5 }}
-                  className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 cursor-pointer hover:shadow-xl transition-all duration-200 border border-slate-600"
+                  className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-6 hover:shadow-xl transition-all duration-200 border border-slate-600 text-left"
                 >
                   <div className="flex items-start space-x-4">
                     <div className="p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
@@ -291,7 +318,7 @@ const AdminPanel: React.FC = () => {
                       <p className="text-gray-400 text-sm">{item.description}</p>
                     </div>
                   </div>
-                </motion.div>
+                </motion.button>
               );
             })}
           </div>

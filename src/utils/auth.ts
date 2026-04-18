@@ -230,7 +230,7 @@ export class AuthService {
     localStorage.setItem('users', JSON.stringify(users));
   }
 
-  private getAllUsers(): User[] {
+  getAllUsers(): User[] {
     try {
       const users = localStorage.getItem('users');
       return users ? JSON.parse(users) : [];
@@ -282,6 +282,20 @@ export class AuthService {
   // Check if user is admin
   isAdmin(): boolean {
     return this.currentUser?.isAdmin ?? false;
+  }
+
+  // Delete a user
+  deleteUser(userId: string): void {
+    const users = this.getAllUsers();
+    const filteredUsers = users.filter(u => u.id !== userId);
+    localStorage.setItem('users', JSON.stringify(filteredUsers));
+
+    if (this.currentUser?.id === userId) {
+      this.setCurrentUser(null);
+    }
+
+    // Clean up password
+    localStorage.removeItem(`password_${userId}`);
   }
 
   private notifyListeners(): void {
