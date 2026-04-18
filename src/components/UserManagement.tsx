@@ -1,26 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Shield, ShieldOff, Mail, Calendar, Activity, Search, Eye, EyeOff } from 'lucide-react';
-import { authService, User } from '../utils/auth';
+import { Trash2, Shield, ShieldOff, Calendar, Activity, Search } from 'lucide-react';
+import { supabase, UserProfile } from '../utils/supabase';
 
 interface UserManagementProps {
   onClose: () => void;
 }
 
+interface ExtendedUserProfile extends UserProfile {
+  email: string;
+}
+
 const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<ExtendedUserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState<string>('all');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<ExtendedUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const loadUsers = () => {
-    const allUsers = authService.getAllUsers();
-    setUsers(allUsers);
+  const loadUsers = async () => {
+    try {
+      setError(null);
+      const { data: profiles, error: dbError } = await supabase
+        .from('user_profiles')
+        .select('*');
+
+      if (dbError) {
+        setError(dbError.message);
+        return;
+      }
+
+      if (profiles) {
+        const { data: authUsers } = await supabase.auth.admin.listUsers();
+
+        const usersWithEmail: ExtendedUserProfile[] = profiles.map(profile => {
+          const authUser = authUsers?.users.find(u => u.id === profile.id);
+          return {
+            ...profile,
+            email: authUser?.email || 'Unknown',
+          };
+        });
+
+        setUsers(usersWithEmail);
+      }
+    } catch (err) {
+      console.error('Error loading users:', err);
+      setError('Failed to load users');
+    }
   };
 
   const filteredUsers = users.filter(user => {
@@ -30,20 +61,48 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
     return matchesSearch && matchesLevel;
   });
 
-  const handleToggleAdmin = (user: User) => {
-    setIsLoading(true);
-    authService.setAdminRole(user.email, !user.isAdmin);
-    loadUsers();
-    setIsLoading(false);
+  const handleToggleAdmin = async (user: ExtendedUserProfile) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ is_admin: !user.is_admin })
+        .eq('id', user.id);
+
+      if (error) {
+        setError(error.message);
+      } else {
+        await loadUsers();
+      }
+    } catch (err) {
+      console.error('Error updating admin status:', err);
+      setError('Failed to update user');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (confirm('Вы уверены? Это действие нельзя отменить.')) {
-      setIsLoading(true);
-      authService.deleteUser(userId);
-      loadUsers();
-      setSelectedUser(null);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const { error } = await supabase
+          .from('user_profiles')
+          .delete()
+          .eq('id', userId);
+
+        if (error) {
+          setError(error.message);
+        } else {
+          await loadUsers();
+          setSelectedUser(null);
+        }
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        setError('Failed to delete user');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
