@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface UserProfile {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   created_at: string;
   updated_at: string;
   preferences: {
@@ -24,5 +24,5 @@ export interface UserProfile {
     studyTime: number;
   };
   is_admin?: boolean;
-  last_login?: string;
+  last_login?: string | null;
 }

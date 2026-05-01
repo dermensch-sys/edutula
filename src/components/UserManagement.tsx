@@ -7,15 +7,11 @@ interface UserManagementProps {
   onClose: () => void;
 }
 
-interface ExtendedUserProfile extends UserProfile {
-  email: string;
-}
-
 const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
-  const [users, setUsers] = useState<ExtendedUserProfile[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLevel, setFilterLevel] = useState<string>('all');
-  const [selectedUser, setSelectedUser] = useState<ExtendedUserProfile | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +22,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
   const loadUsers = async () => {
     try {
       setError(null);
+      setIsLoading(true);
       const { data: profiles, error: dbError } = await supabase
         .from('user_profiles')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (dbError) {
         setError(dbError.message);
@@ -36,27 +34,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
       }
 
       if (profiles) {
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
-
-        const usersWithEmail: ExtendedUserProfile[] = profiles.map(profile => {
-          const authUser = authUsers?.users.find(u => u.id === profile.id);
-          return {
-            ...profile,
-            email: authUser?.email || 'Unknown',
-          };
-        });
-
-        setUsers(usersWithEmail);
+        setUsers(profiles as UserProfile[]);
       }
     } catch (err) {
       console.error('Error loading users:', err);
       setError('Failed to load users');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                          (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesLevel = filterLevel === 'all' || user.profile.level === filterLevel;
     return matchesSearch && matchesLevel;
   });
@@ -153,6 +143,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
         </button>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
@@ -205,7 +202,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     <div className="font-medium text-gray-900">{user.name}</div>
                   </td>
                   <td className="py-4 px-4">
-                    <div className="text-gray-600 text-sm">{user.email}</div>
+                    <div className="text-gray-600 text-sm">{user.email || 'N/A'}</div>
                   </td>
                   <td className="py-4 px-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(user.profile.level)}`}>
@@ -213,10 +210,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     </span>
                   </td>
                   <td className="py-4 px-4">
-                    <div className="text-gray-600 text-sm">{user.createdAt.toLocaleDateString()}</div>
+                    <div className="text-gray-600 text-sm">{new Date(user.created_at).toLocaleDateString()}</div>
                   </td>
                   <td className="py-4 px-4">
-                    {user.isAdmin ? (
+                    {user.is_admin ? (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
                         <Shield className="h-4 w-4 mr-1" />
                         Администратор
@@ -237,9 +234,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                         }}
                         disabled={isLoading}
                         className="p-2 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
-                        title={user.isAdmin ? 'Убрать права администратора' : 'Дать права администратора'}
+                        title={user.is_admin ? 'Убрать права администратора' : 'Дать права администратора'}
                       >
-                        {user.isAdmin ? (
+                        {user.is_admin ? (
                           <ShieldOff className="h-5 w-5 text-blue-600" />
                         ) : (
                           <Shield className="h-5 w-5 text-gray-400 hover:text-blue-600" />
@@ -265,7 +262,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
         </table>
       </div>
 
-      {filteredUsers.length === 0 && (
+      {isLoading && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Загрузка...</p>
+        </div>
+      )}
+
+      {!isLoading && filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">Пользователи не найдены</p>
         </div>
@@ -306,7 +309,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Email</p>
-                      <p className="text-lg font-medium text-gray-900">{selectedUser.email}</p>
+                      <p className="text-lg font-medium text-gray-900">{selectedUser.email || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Уровень знаний</p>
@@ -315,7 +318,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     <div>
                       <p className="text-sm text-gray-600">Роль</p>
                       <p className="text-lg font-medium text-gray-900">
-                        {selectedUser.isAdmin ? 'Администратор' : 'Пользователь'}
+                        {selectedUser.is_admin ? 'Администратор' : 'Пользователь'}
                       </p>
                     </div>
                   </div>
@@ -329,14 +332,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                       <Calendar className="h-5 w-5 text-blue-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600">Дата присоединения</p>
-                        <p className="text-gray-900">{selectedUser.createdAt.toLocaleString()}</p>
+                        <p className="text-gray-900">{new Date(selectedUser.created_at).toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <Activity className="h-5 w-5 text-green-600 mt-1" />
                       <div>
                         <p className="text-sm text-gray-600">Последний вход</p>
-                        <p className="text-gray-900">{selectedUser.lastLoginAt.toLocaleString()}</p>
+                        <p className="text-gray-900">{selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleString() : 'Никогда'}</p>
                       </div>
                     </div>
                   </div>
@@ -404,7 +407,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onClose }) => {
                     disabled={isLoading}
                     className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
-                    {selectedUser.isAdmin ? (
+                    {selectedUser.is_admin ? (
                       <>
                         <ShieldOff className="h-5 w-5" />
                         <span>Убрать права администратора</span>
