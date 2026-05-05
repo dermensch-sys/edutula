@@ -20,9 +20,9 @@ const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose
       const user = authService.getCurrentUser();
       if (user) {
         const path = educationalTrajectoryService.getUserPath(user.id);
-        const next = educationalTrajectoryService.getNextStep(user.id);
-        const statistics = educationalTrajectoryService.getLearningStats(user.id);
-        
+        const next = path ? educationalTrajectoryService.getNextStep(user.id) : null;
+        const statistics = path ? educationalTrajectoryService.getLearningStats(user.id) : null;
+
         setLearningPath(path);
         setNextStep(next);
         setStats(statistics);
