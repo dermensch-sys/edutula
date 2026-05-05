@@ -231,7 +231,7 @@ const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose
             {/* All Steps */}
             <div>
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Все шаги</h4>
-              <div className="space-y-3 max-h-64 overflow-y-auto">
+              <div className="space-y-3 overflow-y-auto">
                 {learningPath.steps
                   .sort((a, b) => a.order - b.order)
                   .map((step, index) => (
