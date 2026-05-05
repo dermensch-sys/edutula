@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Menu, X, BookOpen, BarChart3, Database, CheckSquare, Brain, MessageCircle, GraduationCap, RotateCcw, Trophy, User, LogIn, Route, Shield } from 'lucide-react';
 import { authService } from '../utils/auth';
@@ -14,6 +14,7 @@ const Navbar: React.FC = () => {
   const [showTrajectory, setShowTrajectory] = useState(false);
   const [user, setUser] = useState(authService.getCurrentUser());
   const location = useLocation();
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     const unsubscribe = authService.onAuthStateChange((newUser) => {
@@ -223,6 +224,11 @@ const Navbar: React.FC = () => {
       <LearningTrajectory
         isOpen={showTrajectory}
         onClose={() => setShowTrajectory(false)}
+        onNavigate={(page) => {
+          if (page === 'neuro-examiner') {
+            navigate('/examiner');
+          }
+        }}
       />
     </nav>
   );

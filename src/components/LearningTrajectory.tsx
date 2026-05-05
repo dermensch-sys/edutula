@@ -7,9 +7,10 @@ import { authService } from '../utils/auth';
 interface LearningTrajectoryProps {
   isOpen: boolean;
   onClose: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose }) => {
+const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose, onNavigate }) => {
   const [learningPath, setLearningPath] = useState<LearningPath | null>(null);
   const [nextStep, setNextStep] = useState<TrajectoryStep | null>(null);
   const [stats, setStats] = useState<any>(null);
@@ -103,7 +104,10 @@ const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose
               Пройдите тест, чтобы создать персонализированную образовательную траекторию
             </p>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onNavigate?.('neuro-examiner');
+                onClose();
+              }}
               className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
             >
               Пройти тест
