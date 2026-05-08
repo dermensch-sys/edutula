@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Users, Settings, BarChart3, Shield, CreditCard as Edit2, Save, X } from 'lucide-react';
+import { LogOut, Users, Settings, BarChart3, Shield, CreditCard as Edit2, Save, X, Cloud, AlertCircle } from 'lucide-react';
 import { authService, User as UserType } from '../utils/auth';
+import { dataSyncService } from '../utils/dataSync';
 import AuthModal from '../components/AuthModal';
 import UserManagement from '../components/UserManagement';
 
@@ -12,6 +13,7 @@ const AdminPanel: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<UserType>>({});
   const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | null>(null);
+  const [syncStatus, setSyncStatus] = useState(dataSyncService.getSyncStatus());
 
   React.useEffect(() => {
     const currentUser = authService.getCurrentUser();
@@ -23,6 +25,14 @@ const AdminPanel: React.FC = () => {
       setEditData(newUser || {});
     });
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSyncStatus(dataSyncService.getSyncStatus());
+    }, 5000); // Update sync status every 5 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = async () => {
@@ -279,14 +289,35 @@ const AdminPanel: React.FC = () => {
               <h1 className="text-4xl font-bold text-white mb-2">Панель администратора</h1>
               <p className="text-gray-400">Добро пожаловать, {adminUser.name}</p>
             </div>
-            <button
-              onClick={handleLogout}
-              disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
-            >
-              <LogOut className="h-5 w-5" />
-              <span>{isLoading ? 'Выход...' : 'Выход'}</span>
-            </button>
+            <div className="flex items-center space-x-4">
+              {/* Sync Status */}
+              <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                dataSyncService.isFullySynced()
+                  ? 'bg-green-600/20 text-green-400'
+                  : 'bg-yellow-600/20 text-yellow-400'
+              }`}>
+                {dataSyncService.isFullySynced() ? (
+                  <>
+                    <Cloud className="h-5 w-5" />
+                    <span className="text-sm">Синхронизировано</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-5 w-5 animate-pulse" />
+                    <span className="text-sm">{syncStatus.pendingItems} ожидают</span>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={handleLogout}
+                disabled={isLoading}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>{isLoading ? 'Выход...' : 'Выход'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Admin Menu Grid */}

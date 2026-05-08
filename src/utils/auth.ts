@@ -1,4 +1,7 @@
 // Authentication and User Management System
+import { supabase } from './supabase';
+import { dataSyncService } from './dataSync';
+
 export interface User {
   id: string;
   email: string;
@@ -54,6 +57,7 @@ export class AuthService {
 
   private initializeAdminUser(): void {
     const ADMIN_EMAIL = 'dermensch@mail.ru';
+    const ADMIN_PASSWORD = 'Drm:120878';
     const users = this.getAllUsers();
     const adminUser = users.find(u => u.email === ADMIN_EMAIL);
 
@@ -80,7 +84,7 @@ export class AuthService {
       };
 
       this.saveUser(newAdminUser);
-      this.savePassword(newAdminUser.id, 'admin123');
+      this.savePassword(newAdminUser.id, ADMIN_PASSWORD);
     } else if (!adminUser.isAdmin) {
       adminUser.isAdmin = true;
       this.saveUser(adminUser);
@@ -220,7 +224,7 @@ export class AuthService {
   private saveUser(user: User): void {
     const users = this.getAllUsers();
     const existingIndex = users.findIndex(u => u.id === user.id);
-    
+
     if (existingIndex >= 0) {
       users[existingIndex] = user;
     } else {
@@ -228,6 +232,17 @@ export class AuthService {
     }
 
     localStorage.setItem('users', JSON.stringify(users));
+
+    // Sync user changes to network
+    if (this.currentUser?.id === user.id) {
+      dataSyncService.queueChange(
+        user.id,
+        'user',
+        existingIndex >= 0 ? 'update' : 'create',
+        user.id,
+        user
+      );
+    }
   }
 
   getAllUsers(): User[] {
