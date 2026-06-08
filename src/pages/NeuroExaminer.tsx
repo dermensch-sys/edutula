@@ -336,7 +336,7 @@ const NeuroExaminer: React.FC = () => {
     }, 2000);
   };
 
-  const finishTest = () => {
+  const finishTest = async () => {
     if (testSession) {
       // Get current user
       const user = authService.getCurrentUser();
@@ -376,13 +376,13 @@ const NeuroExaminer: React.FC = () => {
           correctAnswer: question.correctAnswer,
           topic: 'ai-fundamentals'
         }));
-        
-        const existingPath = educationalTrajectoryService.getUserPath(user.id);
-        
+
+        const existingPath = await educationalTrajectoryService.getUserPath(user.id);
+
         if (existingPath) {
-          educationalTrajectoryService.adaptPath(user.id, testResults);
+          await educationalTrajectoryService.adaptPath(user.id, testResults);
         } else {
-          educationalTrajectoryService.createPersonalizedPath(user.id, testResults, user.profile);
+          await educationalTrajectoryService.createPersonalizedPath(user.id, testResults, user.profile);
         }
       }
       

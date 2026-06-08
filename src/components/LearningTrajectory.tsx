@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Target, CheckCircle, Clock, TrendingUp, ArrowRight, Play, Award, Brain } from 'lucide-react';
+import { BookOpen, Target, CheckCircle, Clock, TrendingUp, ArrowRight, Play, Award, Brain, Loader2 } from 'lucide-react';
 import { educationalTrajectoryService, LearningPath, TrajectoryStep } from '../utils/educationalTrajectory';
 import { authService } from '../utils/auth';
 
@@ -14,21 +14,42 @@ const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose
   const [learningPath, setLearningPath] = useState<LearningPath | null>(null);
   const [nextStep, setNextStep] = useState<TrajectoryStep | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
+      setIsLoading(true);
       const user = authService.getCurrentUser();
       if (user) {
-        const path = educationalTrajectoryService.getUserPath(user.id);
-        const next = path ? educationalTrajectoryService.getNextStep(user.id) : null;
-        const statistics = path ? educationalTrajectoryService.getLearningStats(user.id) : null;
+        // Try to get existing path
+        educationalTrajectoryService.getUserPath(user.id).then(path => {
+          if (path) {
+            const next = educationalTrajectoryService.getNextStep(user.id);
+            const statistics = educationalTrajectoryService.getLearningStats(user.id);
 
-        setLearningPath(path);
-        setNextStep(next);
-        setStats(statistics);
+            setLearningPath(path);
+            setNextStep(next);
+            setStats(statistics);
+            setIsLoading(false);
+          } else {
+            // No path exists - redirect to test
+            setLearningPath(null);
+            setNextStep(null);
+            setStats(null);
+            setIsLoading(false);
+
+            // Automatically redirect to the test after a short delay
+            setTimeout(() => {
+              onNavigate?.('neuro-examiner');
+              onClose();
+            }, 1500);
+          }
+        });
+      } else {
+        setIsLoading(false);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, onNavigate, onClose]);
 
   const handleCompleteStep = (stepId: string) => {
     const user = authService.getCurrentUser();
@@ -78,12 +99,13 @@ const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -96,23 +118,36 @@ const LearningTrajectory: React.FC<LearningTrajectoryProps> = ({ isOpen, onClose
           </button>
         </div>
 
-        {!learningPath ? (
-          <div className="text-center py-12">
-            <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Траектория не создана</h3>
-            <p className="text-gray-600 mb-6">
-              Пройдите тест, чтобы создать персонализированную образовательную траекторию
-            </p>
-            <button
-              onClick={() => {
-                onNavigate?.('neuro-examiner');
-                onClose();
-              }}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              Пройти тест
-            </button>
+        {isLoading ? (
+          <div className="text-center py-16">
+            <Loader2 className="h-16 w-16 text-blue-500 mx-auto mb-4 animate-spin" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Загрузка траектории...</h3>
+            <p className="text-gray-600">Проверяем ваши данные</p>
           </div>
+        ) : !learningPath ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", damping: 15 }}
+            >
+              <Brain className="h-20 w-20 text-blue-500 mx-auto mb-6" />
+            </motion.div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Тест не пройден</h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              Пройдите адаптивный тест для создания персонализированной образовательной траектории
+            </p>
+            <motion.div
+              animate={{ y: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              <p className="text-sm text-gray-500 mb-4">Перенаправление на тест...</p>
+            </motion.div>
+          </motion.div>
         ) : (
           <>
             {/* Path Overview */}

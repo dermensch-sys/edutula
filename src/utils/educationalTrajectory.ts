@@ -1,6 +1,8 @@
 // Educational Trajectory System
 // Builds personalized learning paths based on test results and user progress
 
+import { supabase } from './supabase';
+
 export interface LearningGoal {
   id: string;
   title: string;
@@ -69,7 +71,7 @@ export class EducationalTrajectoryService {
   }
 
   // Create personalized learning path based on test results
-  createPersonalizedPath(userId: string, testResults: any[], userProfile: any): LearningPath {
+  async createPersonalizedPath(userId: string, testResults: any[], userProfile: any): Promise<LearningPath> {
     const analysis = this.analyzeTestResults(testResults);
     const goals = this.selectGoalsBasedOnAnalysis(analysis, userProfile);
     const steps = this.generateLearningSteps(goals, analysis);
@@ -88,8 +90,40 @@ export class EducationalTrajectoryService {
       adaptations: []
     };
 
+    // Save to local storage
     this.userPaths.set(userId, path);
     this.saveUserPaths();
+
+    // Save to Supabase
+    try {
+      await supabase
+        .from('test_results')
+        .insert({
+          user_id: userId,
+          test_type: 'entrance',
+          score: Math.round((testResults.filter((r: any) => r.isCorrect).length / testResults.length) * 100),
+          total_questions: testResults.length,
+          correct_answers: testResults.filter((r: any) => r.isCorrect).length,
+          results: testResults,
+          analysis: analysis
+        });
+
+      await supabase
+        .from('learning_paths')
+        .upsert({
+          user_id: userId,
+          title: path.title,
+          description: path.description,
+          goals: goals,
+          steps: steps,
+          progress: 0,
+          estimated_completion_time: path.estimatedCompletionTime,
+          adaptations: []
+        });
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+    }
+
     return path;
   }
 
@@ -136,8 +170,8 @@ export class EducationalTrajectoryService {
   }
 
   // Adapt learning path based on new test results
-  adaptPath(userId: string, newTestResults: any[]): LearningPath | null {
-    const currentPath = this.userPaths.get(userId);
+  async adaptPath(userId: string, newTestResults: any[]): Promise<LearningPath | null> {
+    const currentPath = await this.getUserPath(userId);
     if (!currentPath) return null;
 
     const newAnalysis = this.analyzeTestResults(newTestResults);
@@ -163,13 +197,71 @@ export class EducationalTrajectoryService {
       currentPath.estimatedCompletionTime = this.calculateEstimatedTime(updatedSteps);
 
       this.saveUserPaths();
+
+      // Update in Supabase
+      try {
+        await supabase
+          .from('learning_paths')
+          .update({
+            steps: updatedSteps,
+            goals: updatedGoals,
+            progress: currentPath.progress,
+            adaptations: currentPath.adaptations,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+      } catch (error) {
+        console.error('Error updating path in Supabase:', error);
+      }
     }
 
     return currentPath;
   }
 
   // Get user's current learning path
-  getUserPath(userId: string): LearningPath | null {
+  async getUserPath(userId: string): Promise<LearningPath | null> {
+    // Check local storage first
+    let path = this.userPaths.get(userId) || null;
+
+    // If not in local, try Supabase
+    if (!path) {
+      try {
+        const { data, error } = await supabase
+          .from('learning_paths')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (data && !error) {
+          path = {
+            id: data.id,
+            userId: data.user_id,
+            title: data.title,
+            description: data.description,
+            goals: data.goals,
+            steps: data.steps.map((s: any) => ({
+              ...s,
+              completedAt: s.completedAt ? new Date(s.completedAt) : undefined
+            })),
+            createdAt: new Date(data.created_at),
+            updatedAt: new Date(data.updated_at),
+            progress: data.progress,
+            estimatedCompletionTime: data.estimated_completion_time,
+            adaptations: data.adaptations || []
+          };
+
+          this.userPaths.set(userId, path);
+        }
+      } catch (error) {
+        console.error('Error loading from Supabase:', error);
+      }
+    }
+
+    return path || null;
+  }
+
+  // Synchronous version for compatibility
+  getUserPathSync(userId: string): LearningPath | null {
     return this.userPaths.get(userId) || null;
   }
 
